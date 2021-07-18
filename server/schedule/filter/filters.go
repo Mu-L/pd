@@ -338,8 +338,7 @@ func (f *StoreStateFilter) exceedAddLimit(opt *config.PersistOptions, store *cor
 func (f *StoreStateFilter) tooManySnapshots(opt *config.PersistOptions, store *core.StoreInfo) bool {
 	f.Reason = "too-many-snapshot"
 	return !f.AllowTemporaryStates && (uint64(store.GetSendingSnapCount()) > opt.GetMaxSnapshotCount() ||
-		uint64(store.GetReceivingSnapCount()) > opt.GetMaxSnapshotCount() ||
-		uint64(store.GetApplyingSnapCount()) > opt.GetMaxSnapshotCount())
+		uint64(store.GetReceivingSnapCount()) > opt.GetMaxSnapshotCount())
 }
 
 func (f *StoreStateFilter) tooManyPendingPeers(opt *config.PersistOptions, store *core.StoreInfo) bool {
@@ -779,4 +778,39 @@ func createRegionForRuleFit(startKey, endKey []byte,
 		Peers:    copyPeers,
 	}, copyLeader, opts...)
 	return cloneRegion
+}
+
+// RegionScoreFilter filter target store that it's score must higher than the given score
+type RegionScoreFilter struct {
+	scope string
+	score float64
+}
+
+// NewRegionScoreFilter creates a Filter that filters all high score stores.
+func NewRegionScoreFilter(scope string, source *core.StoreInfo, opt *config.PersistOptions) Filter {
+	return &RegionScoreFilter{
+		scope: scope,
+		score: source.RegionScore(opt.GetRegionScoreFormulaVersion(), opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0),
+	}
+}
+
+// Scope scopes only for balance region
+func (f *RegionScoreFilter) Scope() string {
+	return f.scope
+}
+
+// Type types region score filter
+func (f *RegionScoreFilter) Type() string {
+	return "region-score-filter"
+}
+
+// Source ignore source
+func (f *RegionScoreFilter) Source(opt *config.PersistOptions, _ *core.StoreInfo) bool {
+	return true
+}
+
+// Target return true if target's score less than source's score
+func (f *RegionScoreFilter) Target(opt *config.PersistOptions, store *core.StoreInfo) bool {
+	score := store.RegionScore(opt.GetRegionScoreFormulaVersion(), opt.GetHighSpaceRatio(), opt.GetLowSpaceRatio(), 0)
+	return score < f.score
 }

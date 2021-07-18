@@ -16,7 +16,7 @@ package schedulers
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -33,17 +33,18 @@ import (
 // params about hot region.
 func initHotRegionScheduleConfig() *hotRegionSchedulerConfig {
 	return &hotRegionSchedulerConfig{
-		MinHotByteRate:        100,
-		MinHotKeyRate:         10,
-		MaxZombieRounds:       3,
-		ByteRateRankStepRatio: 0.05,
-		KeyRateRankStepRatio:  0.05,
-		CountRankStepRatio:    0.01,
-		GreatDecRatio:         0.95,
-		MinorDecRatio:         0.99,
-		MaxPeerNum:            1000,
-		SrcToleranceRatio:     1.05, // Tolerate 5% difference
-		DstToleranceRatio:     1.05, // Tolerate 5% difference
+		MinHotByteRate:         100,
+		MinHotKeyRate:          10,
+		MaxZombieRounds:        3,
+		ByteRateRankStepRatio:  0.05,
+		KeyRateRankStepRatio:   0.05,
+		QueryRateRankStepRatio: 0.05,
+		CountRankStepRatio:     0.01,
+		GreatDecRatio:          0.95,
+		MinorDecRatio:          0.99,
+		MaxPeerNum:             1000,
+		SrcToleranceRatio:      1.05, // Tolerate 5% difference
+		DstToleranceRatio:      1.05, // Tolerate 5% difference
 	}
 }
 
@@ -58,13 +59,14 @@ type hotRegionSchedulerConfig struct {
 
 	// rank step ratio decide the step when calculate rank
 	// step = max current * rank step ratio
-	ByteRateRankStepRatio float64 `json:"byte-rate-rank-step-ratio"`
-	KeyRateRankStepRatio  float64 `json:"key-rate-rank-step-ratio"`
-	CountRankStepRatio    float64 `json:"count-rank-step-ratio"`
-	GreatDecRatio         float64 `json:"great-dec-ratio"`
-	MinorDecRatio         float64 `json:"minor-dec-ratio"`
-	SrcToleranceRatio     float64 `json:"src-tolerance-ratio"`
-	DstToleranceRatio     float64 `json:"dst-tolerance-ratio"`
+	ByteRateRankStepRatio  float64 `json:"byte-rate-rank-step-ratio"`
+	KeyRateRankStepRatio   float64 `json:"key-rate-rank-step-ratio"`
+	QueryRateRankStepRatio float64 `json:"query-rate-rank-step-ratio"`
+	CountRankStepRatio     float64 `json:"count-rank-step-ratio"`
+	GreatDecRatio          float64 `json:"great-dec-ratio"`
+	MinorDecRatio          float64 `json:"minor-dec-ratio"`
+	SrcToleranceRatio      float64 `json:"src-tolerance-ratio"`
+	DstToleranceRatio      float64 `json:"dst-tolerance-ratio"`
 }
 
 func (conf *hotRegionSchedulerConfig) EncodeConfig() ([]byte, error) {
@@ -121,6 +123,12 @@ func (conf *hotRegionSchedulerConfig) GetKeyRankStepRatio() float64 {
 	return conf.KeyRateRankStepRatio
 }
 
+func (conf *hotRegionSchedulerConfig) GetQueryRateRankStepRatio() float64 {
+	conf.RLock()
+	defer conf.RUnlock()
+	return conf.QueryRateRankStepRatio
+}
+
 func (conf *hotRegionSchedulerConfig) GetCountRankStepRatio() float64 {
 	conf.RLock()
 	defer conf.RUnlock()
@@ -170,7 +178,7 @@ func (conf *hotRegionSchedulerConfig) handleSetConfig(w http.ResponseWriter, r *
 	defer conf.Unlock()
 	rd := render.New(render.Options{IndentJSON: true})
 	oldc, _ := json.Marshal(conf)
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	r.Body.Close()
 	if err != nil {
 		rd.JSON(w, http.StatusInternalServerError, err.Error())

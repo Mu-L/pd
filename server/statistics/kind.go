@@ -13,6 +13,39 @@
 
 package statistics
 
+// RegionStatKind represents the statistics type of region.
+type RegionStatKind int
+
+// Different region statistics kinds.
+const (
+	RegionReadBytes RegionStatKind = iota
+	RegionReadKeys
+	RegionReadQuery
+	RegionWriteBytes
+	RegionWriteKeys
+	RegionWriteQuery
+
+	RegionStatCount
+)
+
+func (k RegionStatKind) String() string {
+	switch k {
+	case RegionReadBytes:
+		return "read_bytes"
+	case RegionReadKeys:
+		return "read_keys"
+	case RegionWriteBytes:
+		return "write_bytes"
+	case RegionWriteKeys:
+		return "write_keys"
+	case RegionReadQuery:
+		return "read_query"
+	case RegionWriteQuery:
+		return "write_query"
+	}
+	return "unknown RegionStatKind"
+}
+
 // StoreStatKind represents the statistics type of store.
 type StoreStatKind int
 
@@ -22,6 +55,8 @@ const (
 	StoreReadKeys
 	StoreWriteBytes
 	StoreWriteKeys
+	StoreReadQuery
+	StoreWriteQuery
 	StoreCPUUsage
 	StoreDiskReadRate
 	StoreDiskWriteRate
@@ -37,6 +72,10 @@ func (k StoreStatKind) String() string {
 		return "store_read_keys"
 	case StoreWriteBytes:
 		return "store_write_bytes"
+	case StoreReadQuery:
+		return "store_read_query"
+	case StoreWriteQuery:
+		return "store_write_query"
 	case StoreWriteKeys:
 		return "store_write_keys"
 	case StoreCPUUsage:

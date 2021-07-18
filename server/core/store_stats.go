@@ -38,7 +38,7 @@ type storeStats struct {
 func newStoreStats() *storeStats {
 	return &storeStats{
 		rawStats:                 &pdpb.StoreStats{},
-		avgAvailable:             movingaverage.NewHMA(240),       // take 40 minutes sample under 10s heartbeat rate
+		avgAvailable:             movingaverage.NewHMA(60),        // take 10 minutes sample under 10s heartbeat rate
 		maxAvailableDeviation:    movingaverage.NewMaxFilter(120), // take 20 minutes sample under 10s heartbeat rate
 		avgMaxAvailableDeviation: movingaverage.NewHMA(60),        // take 10 minutes sample under 10s heartbeat rate
 	}
@@ -134,13 +134,6 @@ func (ss *storeStats) GetReceivingSnapCount() uint32 {
 	ss.mu.RLock()
 	defer ss.mu.RUnlock()
 	return ss.rawStats.GetReceivingSnapCount()
-}
-
-// GetApplyingSnapCount returns the current applying snapshot count of the store.
-func (ss *storeStats) GetApplyingSnapCount() uint32 {
-	ss.mu.RLock()
-	defer ss.mu.RUnlock()
-	return ss.rawStats.GetApplyingSnapCount()
 }
 
 // GetAvgAvailable returns available size after the spike changes has been smoothed.
